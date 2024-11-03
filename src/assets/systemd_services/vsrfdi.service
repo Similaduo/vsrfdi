@@ -1,0 +1,13 @@
+[Unit]
+Description=verify_some_rootfs_files_during_initramfs
+DefaultDependencies=no
+RequiredBy=initrd-fs.target
+After=initrd-fs.target
+Before=initrd.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/vsrii/vsrfdi
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/console

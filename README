@@ -1,0 +1,107 @@
+verify_some_rootfs_files_during_initramfs
+
+What is this?
+
+This is a tiny program that is desigened to run during the systemd based initramfs(or other kind of initramfs like busybox).
+It will read the public key storaged inside the initcpio image and use it to verify some files in the rootfs(like /etc/shadow, /usr/bin/sudo or any other file & program you want to verify).
+
+How does it work?
+
+This program is registered as a initrd systemd service and will run after the initrd-fs.target but before the initrd.target.
+This will allow the program read & verify the rootfs files very easily.
+According to the systemd document (man bootup), this service will be run like this:
+
+                                          :
+                                          v
+                                    basic.target
+                                          |                       emergency.service
+                   ______________________/|                               |
+                  /                       |                               v
+                  |            initrd-root-device.target          emergency.target
+                  |                       |
+                  |                       v
+                  |                  sysroot.mount
+                  |                       |
+                  |                       v
+                  |             initrd-root-fs.target
+                  |                       |
+                  |                       v
+                  v            initrd-parse-etc.service
+           (custom initrd                 |
+            services...)                  v
+                  |            (sysroot-usr.mount and
+                  |             various mounts marked
+                  |               with fstab option
+                  |              x-initrd.mount...)
+                  |                       |
+                  |                       v
+                  |                initrd-fs.target
+                  \______________________ |
+                                         \|
+                                          |
+                                          v
+                                   ****************
+                                   *vsrfdi.service*
+                                   ****************      
+                                          |
+                                          v
+                                     initrd.target
+                                          |
+                                          v
+                                initrd-cleanup.service
+                                     isolates to
+                               initrd-switch-root.target
+                                          |
+                                          v
+                   ______________________/|
+                  /                       v
+                  |        initrd-udevadm-cleanup-db.service
+                  v                       |
+           (custom initrd                 |
+            services...)                  |
+                  \______________________ |
+                                         \|
+                                          v
+                              initrd-switch-root.target
+                                          |
+                                          v
+                              initrd-switch-root.service
+                                          |
+                                          v
+                                Transition to Host OS
+
+Also, the program will do these things:
+1. Read the GPG public key storeaged inside the initcpio image (loacted at /etc/vsrfdi/pub.asc)
+2. Load the public key and verify the filelist's signature (located at /sysroot/var/lib/vsrfdi/filelist.sig, systemd mounts the rootfs at /sysroot during the initramfs)
+3. After verifing the filelist's signature is okay, it will read the content of the filelist(/sysroot/etc/vsrfdi/filelist)
+4. The content of the filelist is like this:
+    1=/etc/shadow
+    2=/usr/bin/sudo
+    ...
+   That means the program will try to verify /etc/shadow and /usr/bin/sudo's signature in the rootfs, there signature file is located in the /sysroot/var/lib/vsrfdi/signatures/*.sig (for example 1.sig)
+   The number in the front is the actuall signature file name.
+5. If every signature is okay, the programe will print the "Verification process completed successfully.", otherwise it will exit with 1 and the error messege.
+
+Installation:
+
+Right now this program can only be installed manually, which means you should add these files to the initcpio image:
+
+1. /etc/vsrfdi/pub.asc the public key
+2. /usr/lib/vsrfdi/vsrfdi the program binary
+
+And in the rootfs:
+
+1. /etc/vsrfdi/filelist the filelist (controls which file should be verified)
+2. /var/lib/vsrfdi/filelist.sig the signature of the filelist
+3. /var/lib/vsrfdi/signatures/*.sig the actual file's signature you want to verify (for example 1.sig 2.sig)
+
+It is recommonded to using unified kernel image with self signed secure boot because it will make sure the baseline trsut of the program itself and the public key inside the initcpio image.
+
+The signing process is not implemented so you have to sign them manually with GnuPG.
+An archlinux PKGBUILD file will be added soon.
+
+Notes:
+This program is still in the very early development so there should quite a lot of bugs or error. Issues and pull forks and requests are weclomed.
+
+License:
+This program is under GPL v3 or later
