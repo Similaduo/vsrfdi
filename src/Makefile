@@ -6,7 +6,6 @@ CFLAGS = -pedantic -Wall -Os -march=native -O3 -pipe -fno-plt -fexceptions \
          -fstack-clash-protection -fcf-protection
 LDFLAGS = -Wl,-O1 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
           -Wl,-z,pack-relative-relocs
-DESTDIR = /usr/local/bin
 
 all: build
 
