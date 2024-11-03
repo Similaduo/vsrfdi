@@ -88,6 +88,8 @@ Right now this program can only be installed manually, which means you should ad
 
 1. /etc/vsrfdi/pub.asc the public key
 2. /usr/lib/vsrfdi/vsrfdi the program binary
+3. /usr/lib/systemd/system/vsrfdi.service the service file
+4. /usr/lib/systemd/system/sysinit.target.wants/vsrfdi.service symbolic link to /usr/lib/systemd/system/vsrfdi.service, without it the vsrfdi.service might not run during the initramfs
 
 And in the rootfs:
 
