@@ -1,4 +1,4 @@
-LIBS = -lncurses -lgpgme
+LIBS = -lgpgme
 SRC = main.c
 OBJ = ${SRC:.c=.o}
 CFLAGS = -pedantic -Wall -Os -march=native -O3 -pipe -fno-plt -fexceptions \
