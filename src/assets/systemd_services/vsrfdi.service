@@ -7,7 +7,7 @@ Before=initrd.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/vsrii/vsrfdi
+ExecStart=/usr/lib/vsrfdi/vsrfdi
 StandardOutput=tty
 StandardError=tty
 TTYPath=/dev/console
