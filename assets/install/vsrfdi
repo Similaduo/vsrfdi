@@ -5,7 +5,7 @@ build() {
 
     add_binary /usr/lib/vsrfdi/vsrfdi
     
-    add_file /etc/vsrfdi/pub.asc
+    add_file /etc/vsrfdi/pub
     
     add_file /usr/lib/systemd/system/vsrfdi.service
     

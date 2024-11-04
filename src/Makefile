@@ -1,4 +1,4 @@
-LIBS = $(shell pkg-config --libs gpgme)
+LIBS = $(shell pkg-config --libs openssl)
 SRC = main.c
 OBJ = ${SRC:.c=.o}
 CFLAGS = -pedantic -Wall -Os -march=native -O3 -pipe -fno-plt -fexceptions \

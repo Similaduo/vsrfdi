@@ -18,7 +18,10 @@
 */
 
 #include <errno.h>
-#include <gpgme.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/sha.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,61 +60,82 @@ void read_file(const char *file_path, char **content, size_t *size) {
   fclose(file);
 }
 
-void verify_signature(gpgme_ctx_t ctx, const char *file_path,
-                      const char *sig_path) {
+void verify_signature(const char *file_path, const char *sig_path,
+                      EVP_PKEY *pubkey) {
   char *content;
   size_t size;
   read_file(file_path, &content, &size);
 
-  gpgme_data_t data, sig;
-  if (gpgme_data_new_from_mem(&data, content, size, 0) != GPG_ERR_NO_ERROR) {
-    fprintf(stderr, "Error creating data buffer from memory\n");
+  FILE *sig_file = fopen(sig_path, "rb");
+  if (!sig_file) {
+    fprintf(stderr, "Error reading signature file %s: %s\n", sig_path,
+            strerror(errno));
     free(content);
     exit(1);
   }
-  if (gpgme_data_new_from_file(&sig, sig_path, 1) != GPG_ERR_NO_ERROR) {
+
+  fseek(sig_file, 0, SEEK_END);
+  size_t sig_size = ftell(sig_file);
+  fseek(sig_file, 0, SEEK_SET);
+
+  unsigned char *sig = malloc(sig_size);
+  if (fread(sig, 1, sig_size, sig_file) != sig_size) {
     fprintf(stderr, "Error reading signature file %s\n", sig_path);
-    gpgme_data_release(data);
     free(content);
+    free(sig);
+    fclose(sig_file);
     exit(1);
   }
 
-  gpgme_op_verify(ctx, sig, data, NULL);
-  gpgme_verify_result_t result = gpgme_op_verify_result(ctx);
+  fclose(sig_file);
 
-  if (!result || !result->signatures ||
-      result->signatures->status != GPG_ERR_NO_ERROR) {
+  EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
+  if (!EVP_DigestVerifyInit(mdctx, NULL, EVP_sha256(), NULL, pubkey)) {
+    fprintf(stderr, "Error initializing digest verify\n");
+    free(content);
+    free(sig);
+    EVP_MD_CTX_free(mdctx);
+    exit(1);
+  }
+
+  if (!EVP_DigestVerifyUpdate(mdctx, content, size)) {
+    fprintf(stderr, "Error updating digest verify\n");
+    free(content);
+    free(sig);
+    EVP_MD_CTX_free(mdctx);
+    exit(1);
+  }
+
+  if (!EVP_DigestVerifyFinal(mdctx, sig, sig_size)) {
     fprintf(stderr, "Signature verification failed for %s\n", file_path);
-    gpgme_data_release(data);
-    gpgme_data_release(sig);
     free(content);
+    free(sig);
+    EVP_MD_CTX_free(mdctx);
     exit(1);
   }
 
-  gpgme_data_release(data);
-  gpgme_data_release(sig);
+  EVP_MD_CTX_free(mdctx);
   free(content);
+  free(sig);
 }
 
-void import_public_key(gpgme_ctx_t ctx, const char *pub_key_path) {
-  gpgme_data_t key_data;
-  if (gpgme_data_new_from_file(&key_data, pub_key_path, 1) !=
-      GPG_ERR_NO_ERROR) {
-    fprintf(stderr, "Error reading public key file %s\n", pub_key_path);
+EVP_PKEY *load_public_key(const char *pub_key_path) {
+  FILE *pub_key_file = fopen(pub_key_path, "r");
+  if (!pub_key_file) {
+    fprintf(stderr, "Error opening public key file %s: %s\n", pub_key_path,
+            strerror(errno));
     exit(1);
   }
 
-  gpgme_op_import(ctx, key_data);
-  gpgme_import_result_t import_result = gpgme_op_import_result(ctx);
+  EVP_PKEY *pubkey = PEM_read_PUBKEY(pub_key_file, NULL, NULL, NULL);
+  fclose(pub_key_file);
 
-  if (!import_result || !import_result->imports ||
-      import_result->imports->status != GPG_ERR_NO_ERROR) {
-    fprintf(stderr, "Failed to import public key from %s\n", pub_key_path);
-    gpgme_data_release(key_data);
+  if (!pubkey) {
+    fprintf(stderr, "Error reading public key from %s\n", pub_key_path);
     exit(1);
   }
 
-  gpgme_data_release(key_data);
+  return pubkey;
 }
 
 int main(int argc, char *argv[]) {
@@ -129,20 +153,11 @@ int main(int argc, char *argv[]) {
   const char *ROOT_PATH = argv[4];
   const char *VERIFY_DIR = argv[5];
 
-  if (!gpgme_check_version(NULL)) {
-    fprintf(stderr, "Error initializing GPGME\n");
-    return 1;
-  }
+  OpenSSL_add_all_algorithms();
+  ERR_load_crypto_strings();
 
-  gpgme_ctx_t ctx;
-  if (gpgme_new(&ctx) != GPG_ERR_NO_ERROR) {
-    fprintf(stderr, "Error creating GPGME context\n");
-    return 1;
-  }
-
-  import_public_key(ctx, PUB_KEY_PATH);
-
-  verify_signature(ctx, FILELIST_PATH, FILELIST_SIG_PATH);
+  EVP_PKEY *pubkey = load_public_key(PUB_KEY_PATH);
+  verify_signature(FILELIST_PATH, FILELIST_SIG_PATH, pubkey);
 
   char *filelist_content;
   size_t filelist_size;
@@ -157,14 +172,16 @@ int main(int argc, char *argv[]) {
       snprintf(file_path, sizeof(file_path), "%s%s", ROOT_PATH, path);
       snprintf(sig_path, sizeof(sig_path), "%s%s.sig", VERIFY_DIR, num);
 
-      printf("Verifing for: %s\n", file_path);
-      verify_signature(ctx, file_path, sig_path);
+      printf("Verifying: %s\n", file_path);
+      verify_signature(file_path, sig_path, pubkey);
     }
     entry = strtok(NULL, "\n");
   }
 
   free(filelist_content);
-  gpgme_release(ctx);
+  EVP_PKEY_free(pubkey);
+  EVP_cleanup();
+  ERR_free_strings();
 
   printf("Verification process completed successfully.\n");
 

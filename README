@@ -71,7 +71,7 @@ According to the systemd document (man bootup), this service will be run like th
                                 Transition to Host OS
 
 Also, the program will do these things:
-1. Read the GPG public key storeaged inside the initcpio image (loacted at /etc/vsrfdi/pub.asc)
+1. Read the public key storeaged inside the initcpio image (loacted at /etc/vsrfdi/pub)
 2. Load the public key and verify the filelist's signature (located at /sysroot/var/lib/vsrfdi/filelist.sig, systemd mounts the rootfs at /sysroot during the initramfs)
 3. After verifing the filelist's signature is okay, it will read the content of the filelist(/sysroot/etc/vsrfdi/filelist)
 4. The content of the filelist is like this:
@@ -86,7 +86,7 @@ Installation:
 
 Right now this program can only be installed manually, which means you should add these files to the initcpio image:
 
-1. /etc/vsrfdi/pub.asc the public key
+1. /etc/vsrfdi/pub the public key
 2. /usr/lib/vsrfdi/vsrfdi the program binary
 3. /usr/lib/systemd/system/vsrfdi.service the service file
 4. /usr/lib/systemd/system/sysinit.target.wants/vsrfdi.service symbolic link to /usr/lib/systemd/system/vsrfdi.service, without it the vsrfdi.service might not run during the initramfs
@@ -99,7 +99,7 @@ And in the rootfs:
 
 It is recommonded to using unified kernel image with self signed secure boot because it will make sure the baseline trsut of the program itself and the public key inside the initcpio image.
 
-The signing process is not implemented so you have to sign them manually with GnuPG.
+The signing process is not implemented so you have to sign them manually with openssl.
 An archlinux PKGBUILD file will be added soon.
 
 Notes:

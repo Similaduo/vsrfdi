@@ -7,7 +7,7 @@ Before=initrd.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/vsrfdi/vsrfdi /etc/vsrfdi/pub.asc /sysroot/etc/vsrfdi/filelist /sysroot/var/lib/vsrfdi/filelist.sig /sysroot /var/lib/vsrfdi/signatures/
+ExecStart=/usr/lib/vsrfdi/vsrfdi /etc/vsrfdi/pub /sysroot/etc/vsrfdi/filelist /sysroot/var/lib/vsrfdi/filelist.sig /sysroot /sysroot/var/lib/vsrfdi/signatures/
 StandardOutput=tty
 StandardError=tty
 TTYPath=/dev/console
