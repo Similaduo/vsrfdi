@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+build() {
+
+    add_binary /usr/lib/vsrfdi/vsrfdi
+    
+    add_file /etc/vsrfdi/pub.asc
+    
+    add_file /usr/lib/systemd/system/vsrfdi.service
+    
+    add_symlink /usr/lib/systemd/system/sysinit.target.wants/vsrfdi.service ../vsrfdi.service
+
+}
+
+help() {
+    cat <<HELPEOF
+This hook provides the vsrfdi which can help you verify some rootfs files during initramfs.
+HELPEOF
+}
