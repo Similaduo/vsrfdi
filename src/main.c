@@ -120,7 +120,7 @@ void import_public_key(gpgme_ctx_t ctx, const char *pub_key_path) {
   gpgme_data_release(key_data);
 }
 
-int main() {
+int main(void) {
   if (!gpgme_check_version(NULL)) {
     fprintf(stderr, "Error initializing GPGME\n");
     return 1;
