@@ -23,12 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PUB_KEY_PATH "/etc/vsrfdi/pub.asc"
-#define FILELIST_PATH "/sysroot/etc/vsrfdi/filelist"
-#define FILELIST_SIG_PATH "/sysroot/var/lib/vsrfdi/filelist.sig"
-#define ROOT_PATH "/sysroot"
-#define VERIFY_DIR "/sysroot/var/lib/vsrfdi/signatures/"
-
 void read_file(const char *file_path, char **content, size_t *size) {
   FILE *file = fopen(file_path, "rb");
   if (!file) {
@@ -120,7 +114,21 @@ void import_public_key(gpgme_ctx_t ctx, const char *pub_key_path) {
   gpgme_data_release(key_data);
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+  if (argc != 6) {
+    fprintf(stderr,
+            "Usage: %s <pub_key_path> <filelist_path> <filelist_sig_path> "
+            "<root_path> <verify_dir>\n",
+            argv[0]);
+    return 1;
+  }
+
+  const char *PUB_KEY_PATH = argv[1];
+  const char *FILELIST_PATH = argv[2];
+  const char *FILELIST_SIG_PATH = argv[3];
+  const char *ROOT_PATH = argv[4];
+  const char *VERIFY_DIR = argv[5];
+
   if (!gpgme_check_version(NULL)) {
     fprintf(stderr, "Error initializing GPGME\n");
     return 1;
@@ -150,8 +158,6 @@ int main(void) {
       snprintf(sig_path, sizeof(sig_path), "%s%s.sig", VERIFY_DIR, num);
 
       printf("Verifing for: %s\n", file_path);
-      // printf("Reading signature file: %s\n", sig_path);
-
       verify_signature(ctx, file_path, sig_path);
     }
     entry = strtok(NULL, "\n");
