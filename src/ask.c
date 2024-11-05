@@ -44,7 +44,8 @@ start:
     if (response[0] == 'y' || response[0] == 'Y') {
       return 0;
     } else if (response[0] == 'n' || response[0] == 'N') {
-      execl("/usr/bin/systemctl", "systemctl", "poweroff", (char *)NULL);
+      execl("/usr/bin/systemctl", "systemctl", "start", "emergency",
+            (char *)NULL);
       perror("Failed to execute systemctl poweroff");
       return 1;
     } else {
@@ -53,7 +54,8 @@ start:
     }
   } else {
     printf("Failed to get input.\n");
-    execl("/usr/bin/systemctl", "systemctl", "poweroff", (char *)NULL);
+    execl("/usr/bin/systemctl", "systemctl", "start", "emergency",
+          (char *)NULL);
     perror("Failed to execute systemctl poweroff");
     return 3;
   }
