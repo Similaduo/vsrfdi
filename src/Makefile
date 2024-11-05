@@ -1,5 +1,5 @@
 LIBS = $(shell pkg-config --libs openssl)
-SRC = main.c
+SRC = main.c ask.c
 OBJ = ${SRC:.c=.o}
 CFLAGS = -pedantic -Wall -Os -march=native -O3 -pipe -fno-plt -fexceptions \
          -Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security \
@@ -9,13 +9,19 @@ LDFLAGS = -O3 -march=native -Wl,--sort-common,--as-needed,-z,relro,-z,now,-z,pac
 CC = clang
 LINKER = clang -fuse-ld=lld 
 
-all: build
+all: build ask
 
-build: ${OBJ}
-	$(LINKER) ${OBJ} -o vsrfdi ${LDFLAGS} ${LIBS}
+build: main.o
+	$(LINKER) main.o -o vsrfdi ${LDFLAGS} ${LIBS}
 
-main.o: ${SRC}
-	$(CC) -c ${SRC} -o main.o ${CFLAGS}
+ask: ask.o
+	$(LINKER) ask.o -o ask ${LDFLAGS}
+
+main.o:
+	$(CC) -c main.c -o main.o ${CFLAGS}
+
+ask.o:
+	$(CC) -c ask.c -o ask.o $(CFLAGS)
 
 clean:
-	rm -f ${OBJ} vsrfdi
+	rm -f ${OBJ} vsrfdi ask
