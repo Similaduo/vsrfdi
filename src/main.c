@@ -56,7 +56,7 @@ void ask_user(void) {
       } else {
         printf("Invalid choice, please input 'y' or 'Y' if you still want to "
                "continue "
-               "the boot porcess:\n")
+               "the boot porcess:\n");
       }
     } else {
       printf("Failed to get input.\n");
