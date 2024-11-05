@@ -54,6 +54,7 @@ start:
   } else {
     printf("Failed to get input.\n");
     execl("/usr/bin/systemctl", "systemctl", "poweroff", (char *)NULL);
+    perror("Failed to execute systemctl poweroff");
     return 3;
   }
   return 0;
