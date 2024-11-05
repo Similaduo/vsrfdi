@@ -5,12 +5,12 @@ DefaultDependencies=no
 RequiredBy=initrd-fs.target
 After=initrd-fs.target
 Before=initrd.target
+OnFailure=vsrfdi-ask.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/lib/vsrfdi/vsrfdi /etc/vsrfdi/pub /sysroot/etc/vsrfdi/filelist /sysroot/var/lib/vsrfdi/filelist.sig /sysroot /sysroot/var/lib/vsrfdi/signatures/
 ExecStartPost=/usr/bin/sleep 3
-OnFailure=vsrfdi-ask.service
 StandardOutput=tty
 StandardError=tty
 TTYPath=/dev/console
