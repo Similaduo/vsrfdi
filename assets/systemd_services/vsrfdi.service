@@ -13,5 +13,6 @@ Type=oneshot
 ExecStart=/usr/lib/vsrfdi/vsrfdi /etc/vsrfdi/pub /sysroot/etc/vsrfdi/filelist /sysroot/var/lib/vsrfdi/filelist.sig /sysroot /sysroot/var/lib/vsrfdi/signatures/
 ExecStartPost=/usr/bin/sleep 3
 StandardOutput=tty
+StandardInput=tty
 StandardError=tty
 TTYPath=/dev/console
