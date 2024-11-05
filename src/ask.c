@@ -21,11 +21,12 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 int main(void) {
   char response[3];
 
-  printf("Seems like some of you rootfs file is corrupt, do you want to "
+  printf("Seems like some of your rootfs file is corrupt, do you want to "
          "continue? (y/n)\n");
 
 start:
@@ -43,6 +44,8 @@ start:
     if (response[0] == 'y' || response[0] == 'Y') {
       return 0;
     } else if (response[0] == 'n' || response[0] == 'N') {
+      execl("/usr/bin/systemctl", "systemctl", "poweroff", (char *)NULL);
+      perror("Failed to execute systemctl poweroff");
       return 1;
     } else {
       printf("Invalid choice, please input y or n.\n");
@@ -50,6 +53,7 @@ start:
     }
   } else {
     printf("Failed to get input.\n");
+    execl("/usr/bin/systemctl", "systemctl", "poweroff", (char *)NULL);
     return 3;
   }
   return 0;
