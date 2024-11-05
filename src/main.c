@@ -32,30 +32,31 @@ void handle_sigint(int sig) {}
 void ask_user(void) {
   char response[3];
   printf("Seems like some of your rootfs file is corrupt, do you want to "
-         "continue?\nNOTE: "
-         "If you choose n, you will enter the emergency shell. However, the "
-         "emergency shell "
-         "might be locked and unavailable.\nAlso, if you think the "
-         "reason for the "
-         "corruption of some rootfs file is due to some security issues, \n"
-         "you should boot via the bootable usb drive to have a check "
-         "rather than typing y "
-         "to boot from the real "
-         "rootfs on your initial hard drive.\nNow typing your choice (y/n):\n");
+         "continue?\nNOTE: For security reasons, the emergency shell is "
+         "disabled in many distros right now.\nSo the only choice you can type "
+         "is 'y' or 'Y' if you still want to boot via the rootfs loacted in "
+         "your initial hard drive.\nOf course, if you think the reason of the "
+         "corruption of some rootfs file is due to some security issues, "
+         "please do not boot from the existing rootfs but boot from a bootable "
+         "usb drive to check your rootfs files.\nYou can press ctrl+alt+del to "
+         "reboot you computer.\nNow typing your choice ('y' or 'Y' if you "
+         "still want to continue) or press ctrl+alt+del to reboot\n");
 
   while (1) {
     if (fgets(response, sizeof(response), stdin) != NULL) {
       response[strcspn(response, "\n")] = '\0';
       if (strlen(response) > 1) {
-        printf("Invalid choice, please input only one character (y or n):\n");
+        printf("Invalid choice, please input 'y' or 'Y' if you still want to "
+               "continue "
+               "the boot porcess:\n");
         while (getchar() != '\n') {
-        } // Clear the input buffer
+        }
       } else if (response[0] == 'y' || response[0] == 'Y') {
         exit(0);
-      } else if (response[0] == 'n' || response[0] == 'N') {
-        exit(1);
       } else {
-        printf("Invalid choice, please input y or n:\n");
+        printf("Invalid choice, please input 'y' or 'Y' if you still want to "
+               "continue "
+               "the boot porcess:\n")
       }
     } else {
       printf("Failed to get input.\n");
