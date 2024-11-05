@@ -5,6 +5,8 @@ build() {
 
     add_binary /usr/lib/vsrfdi/vsrfdi
 	
+	add_binary /usr/lib/vsrfdi/ask
+	
 	if [ ! -f "$BUILDROOT/usr/bin/sleep" ]; then
     
 		add_binary /usr/bin/sleep
