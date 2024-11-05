@@ -27,20 +27,20 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-void umount_all(void) {
+void umount_sysroot(void) {
   pid_t pid = fork();
 
   if (pid == 0) {
-    execl("/usr/bin/umount", "umount", "-a", NULL);
+    execl("/usr/bin/umount", "umount", "-R", "/sysroot", NULL);
     perror("Failed to execute umount");
     _exit(1);
   } else if (pid > 0) {
     int status;
     waitpid(pid, &status, 0);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-      printf("All filesystems unmounted successfully.\n");
+      printf("`/sysroot` unmounted successfully.\n");
     } else {
-      printf("Failed to unmount all filesystems.\n");
+      printf("Failed to unmount `/sysroot`.\n");
     }
   } else {
     perror("Failed to fork");
@@ -68,7 +68,7 @@ start:
       return 0;
     } else if (response[0] == 'n' || response[0] == 'N') {
       sync();
-      umount_all();
+      umount_sysroot();
       reboot(LINUX_REBOOT_CMD_POWER_OFF);
       perror("Failed to power off the system");
       return 1;
@@ -79,7 +79,7 @@ start:
   } else {
     printf("Failed to get input.\n");
     sync();
-    umount_all();
+    umount_sysroot();
     reboot(LINUX_REBOOT_CMD_POWER_OFF);
     perror("Failed to power off the system");
     return 3;
