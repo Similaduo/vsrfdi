@@ -22,9 +22,12 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/sha.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+void handle_sigint(int sig) {}
 
 void read_file(const char *file_path, char **content, size_t *size) {
   FILE *file = fopen(file_path, "rb");
@@ -139,6 +142,9 @@ EVP_PKEY *load_public_key(const char *pub_key_path) {
 }
 
 int main(int argc, char *argv[]) {
+
+  signal(SIGINT, handle_sigint);
+
   if (argc != 6) {
     fprintf(stderr,
             "Usage: %s <pub_key_path> <filelist_path> <filelist_sig_path> "

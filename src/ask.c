@@ -19,11 +19,18 @@
 
 // This code is meant to be unchanged except some serious security issues.
 
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+void handle_sigint(int sig) {}
+
 int main(void) {
+
+  signal(SIGINT, handle_sigint);
+
   char response[3];
 
   printf("Seems like some of your rootfs file is corrupt, do you want to "
@@ -63,10 +70,7 @@ start:
     if (response[0] == 'y' || response[0] == 'Y') {
       return 0;
     } else if (response[0] == 'n' || response[0] == 'N') {
-      execl("/usr/lib/systemd/systemd-sulogin-shell", "systemd-sulogin-shell",
-            "emergency", (char *)NULL);
-      perror("Failed to execute systemctl poweroff");
-      return 1;
+      exit(1);
     } else {
       printf("Invalid choice, please input y or n.\nNOTE: "
              "If you choose n, you will enter the emergency shell. However, "
@@ -83,10 +87,7 @@ start:
     }
   } else {
     printf("Failed to get input.\n");
-    execl("/usr/lib/systemd/systemd-sulogin-shell", "systemd-sulogin-shell",
-          "emergency", (char *)NULL);
-    perror("Failed to execute systemctl poweroff");
-    return 3;
+    exit(1);
   }
   return 0;
 }
