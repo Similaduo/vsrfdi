@@ -13,6 +13,12 @@ build() {
     
     fi
     
+	if [ ! -f "$BUILDROOT/usr/bin/umount" ]; then
+    
+		add_binary /usr/bin/umount
+    
+    fi
+	
     add_file /etc/vsrfdi/pub
     
     add_file /usr/lib/systemd/system/vsrfdi.service
