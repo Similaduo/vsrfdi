@@ -103,7 +103,7 @@ The signing process is not implemented so you have to sign them manually with op
 An archlinux PKGBUILD file will be added soon.
 
 Notes:
-This program is still in the very early development so there should quite a lot of bugs or error. Issues and pull forks and requests are weclomed.
+This program is still in the very early development so there should quite a lot of bugs or error. Issues, pull requests and forks are weclomed.
 
 License:
-This program is under GPL v3 or later
+This program is under GPL-3.0-or-later.
