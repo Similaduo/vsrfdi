@@ -4,8 +4,6 @@
 build() {
 
     add_binary /usr/lib/vsrfdi/vsrfdi
-
-    add_binary /usr/lib/vsrfdi/ask
 	
 	if [ ! -f "$BUILDROOT/usr/bin/sleep" ]; then
     
@@ -19,8 +17,6 @@ build() {
     add_file /usr/lib/systemd/system/vsrfdi.service
     
     add_symlink /usr/lib/systemd/system/sysinit.target.wants/vsrfdi.service ../vsrfdi.service
-	
-	add_file /usr/lib/systemd/system/vsrfdi-ask.service
 
 }
 
