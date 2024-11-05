@@ -19,33 +19,9 @@
 
 // This code is meant to be unchanged except some serious security issues.
 
-#include <linux/reboot.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/reboot.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <unistd.h>
-
-void umount_sysroot(void) {
-  pid_t pid = fork();
-
-  if (pid == 0) {
-    execl("/usr/bin/umount", "umount", "-R", "/sysroot", NULL);
-    perror("Failed to execute umount");
-    _exit(1);
-  } else if (pid > 0) {
-    int status;
-    waitpid(pid, &status, 0);
-    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-      printf("`/sysroot` unmounted successfully.\n");
-    } else {
-      printf("Failed to unmount `/sysroot`.\n");
-    }
-  } else {
-    perror("Failed to fork");
-  }
-}
 
 int main(void) {
   char response[3];
@@ -55,22 +31,22 @@ int main(void) {
 
 start:
   if (fgets(response, sizeof(response), stdin) != NULL) {
+
     response[strcspn(response, "\n")] = '\0';
 
     if (strlen(response) > 1) {
       printf("Invalid choice, please input only one character (y or n).\n");
-      while (getchar() != '\n')
-        ;
+      while (getchar() != '\n') {
+      }
       goto start;
     }
 
     if (response[0] == 'y' || response[0] == 'Y') {
       return 0;
     } else if (response[0] == 'n' || response[0] == 'N') {
-      sync();
-      umount_sysroot();
-      reboot(LINUX_REBOOT_CMD_POWER_OFF);
-      perror("Failed to power off the system");
+      execl("/usr/lib/systemd/systemd-sulogin-shell", "systemd-sulogin-shell",
+            "emergency", (char *)NULL);
+      perror("Failed to execute systemctl poweroff");
       return 1;
     } else {
       printf("Invalid choice, please input y or n.\n");
@@ -78,10 +54,9 @@ start:
     }
   } else {
     printf("Failed to get input.\n");
-    sync();
-    umount_sysroot();
-    reboot(LINUX_REBOOT_CMD_POWER_OFF);
-    perror("Failed to power off the system");
+    execl("/usr/lib/systemd/systemd-sulogin-shell", "systemd-sulogin-shell",
+          "emergency", (char *)NULL);
+    perror("Failed to execute systemctl poweroff");
     return 3;
   }
   return 0;
