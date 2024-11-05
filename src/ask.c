@@ -67,7 +67,16 @@ start:
       perror("Failed to execute systemctl poweroff");
       return 1;
     } else {
-      printf("Invalid choice, please input y or n.\n");
+      printf("Invalid choice, please input y or n.\nNOTE: "
+             "If you choose n, you will enter the emergency shell. However, "
+             "the emergency shell "
+             "might be locked and unavailable.\nAlso, if you think the "
+             "reason for the "
+             "corruption of some rootfs file is due to some security issues, \n"
+             "you should boot via the bootable usb drive to have a check "
+             "rather than typing y "
+             "to boot from the real "
+             "rootfs on your initial hard drive.");
       goto start;
     }
   } else {
