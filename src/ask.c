@@ -27,7 +27,7 @@ int main(void) {
   char response[3];
 
   printf("Seems like some of your rootfs file is corrupt, do you want to "
-         "continue? (y/n)\nNOTE: "
+         "continue?\nNOTE: "
          "If you choose n, you will enter the emergency shell. However, the "
          "emergency shell "
          "might be locked and unavailable.\nAlso, if you think the "
@@ -36,7 +36,7 @@ int main(void) {
          "you should boot via the bootable usb drive to have a check "
          "rather than typing y "
          "to boot from the real "
-         "rootfs on your initial hard drive.");
+         "rootfs on your initial hard drive.\nNow typing your choice (y/n):\n");
 
 start:
   if (fgets(response, sizeof(response), stdin) != NULL) {
@@ -53,7 +53,8 @@ start:
              "you should boot via the bootable usb drive to have a check "
              "rather than typing y "
              "to boot from the real "
-             "rootfs on your initial hard drive.");
+             "rootfs on your initial hard drive.\nNow typing your choice "
+             "(y/n):\n");
       while (getchar() != '\n') {
       }
       goto start;
@@ -76,7 +77,8 @@ start:
              "you should boot via the bootable usb drive to have a check "
              "rather than typing y "
              "to boot from the real "
-             "rootfs on your initial hard drive.");
+             "rootfs on your initial hard drive.\nNow typing your choice "
+             "(y/n):\n");
       goto start;
     }
   } else {
