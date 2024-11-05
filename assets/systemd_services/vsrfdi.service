@@ -5,7 +5,8 @@ DefaultDependencies=no
 RequiredBy=initrd-fs.target
 After=initrd-fs.target
 Before=initrd.target
-OnFailure=vsrfdi-ask.service
+OnFailure=emergency.target
+OnFailureJobMode=replace-irreversibly
 
 [Service]
 Type=oneshot

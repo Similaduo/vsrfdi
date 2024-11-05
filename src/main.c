@@ -29,11 +29,46 @@
 
 void handle_sigint(int sig) {}
 
+void ask_user(void) {
+  char response[3];
+  printf("Seems like some of your rootfs file is corrupt, do you want to "
+         "continue?\nNOTE: "
+         "If you choose n, you will enter the emergency shell. However, the "
+         "emergency shell "
+         "might be locked and unavailable.\nAlso, if you think the "
+         "reason for the "
+         "corruption of some rootfs file is due to some security issues, \n"
+         "you should boot via the bootable usb drive to have a check "
+         "rather than typing y "
+         "to boot from the real "
+         "rootfs on your initial hard drive.\nNow typing your choice (y/n):\n");
+
+  while (1) {
+    if (fgets(response, sizeof(response), stdin) != NULL) {
+      response[strcspn(response, "\n")] = '\0';
+      if (strlen(response) > 1) {
+        printf("Invalid choice, please input only one character (y or n):\n");
+        while (getchar() != '\n') {
+        } // Clear the input buffer
+      } else if (response[0] == 'y' || response[0] == 'Y') {
+        exit(0);
+      } else if (response[0] == 'n' || response[0] == 'N') {
+        exit(1);
+      } else {
+        printf("Invalid choice, please input y or n:\n");
+      }
+    } else {
+      printf("Failed to get input.\n");
+      exit(1);
+    }
+  }
+}
+
 void read_file(const char *file_path, char **content, size_t *size) {
   FILE *file = fopen(file_path, "rb");
   if (!file) {
     fprintf(stderr, "Error reading file %s: %s\n", file_path, strerror(errno));
-    exit(1);
+    ask_user();
   }
 
   fseek(file, 0, SEEK_END);
@@ -42,7 +77,7 @@ void read_file(const char *file_path, char **content, size_t *size) {
     fprintf(stderr, "Error determining file size %s: %s\n", file_path,
             strerror(errno));
     fclose(file);
-    exit(1);
+    ask_user();
   }
   fseek(file, 0, SEEK_SET);
 
@@ -50,14 +85,14 @@ void read_file(const char *file_path, char **content, size_t *size) {
   if (!*content) {
     fprintf(stderr, "Memory allocation failed\n");
     fclose(file);
-    exit(1);
+    ask_user();
   }
 
   if (fread(*content, 1, *size, file) != *size) {
     fprintf(stderr, "Error reading file %s\n", file_path);
     free(*content);
     fclose(file);
-    exit(1);
+    ask_user();
   }
 
   fclose(file);
@@ -74,7 +109,7 @@ void verify_signature(const char *file_path, const char *sig_path,
     fprintf(stderr, "Error reading signature file %s: %s\n", sig_path,
             strerror(errno));
     free(content);
-    exit(1);
+    ask_user();
   }
 
   fseek(sig_file, 0, SEEK_END);
@@ -87,7 +122,7 @@ void verify_signature(const char *file_path, const char *sig_path,
     free(content);
     free(sig);
     fclose(sig_file);
-    exit(1);
+    ask_user();
   }
 
   fclose(sig_file);
@@ -98,7 +133,7 @@ void verify_signature(const char *file_path, const char *sig_path,
     free(content);
     free(sig);
     EVP_MD_CTX_free(mdctx);
-    exit(1);
+    ask_user();
   }
 
   if (!EVP_DigestVerifyUpdate(mdctx, content, size)) {
@@ -106,7 +141,7 @@ void verify_signature(const char *file_path, const char *sig_path,
     free(content);
     free(sig);
     EVP_MD_CTX_free(mdctx);
-    exit(1);
+    ask_user();
   }
 
   if (!EVP_DigestVerifyFinal(mdctx, sig, sig_size)) {
@@ -114,7 +149,7 @@ void verify_signature(const char *file_path, const char *sig_path,
     free(content);
     free(sig);
     EVP_MD_CTX_free(mdctx);
-    exit(1);
+    ask_user();
   }
 
   EVP_MD_CTX_free(mdctx);
@@ -127,7 +162,7 @@ EVP_PKEY *load_public_key(const char *pub_key_path) {
   if (!pub_key_file) {
     fprintf(stderr, "Error opening public key file %s: %s\n", pub_key_path,
             strerror(errno));
-    exit(1);
+    ask_user();
   }
 
   EVP_PKEY *pubkey = PEM_read_PUBKEY(pub_key_file, NULL, NULL, NULL);
@@ -135,7 +170,7 @@ EVP_PKEY *load_public_key(const char *pub_key_path) {
 
   if (!pubkey) {
     fprintf(stderr, "Error reading public key from %s\n", pub_key_path);
-    exit(1);
+    ask_user();
   }
 
   return pubkey;
