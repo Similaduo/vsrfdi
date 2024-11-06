@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define CHUNK_SIZE 4096
+
 void handle_sigint(int sig) {}
 
 void ask_user(void) {
@@ -34,7 +36,7 @@ void ask_user(void) {
   printf("Seems like some of your rootfs file is corrupt, do you want to "
          "continue?\nNOTE: For security reasons, the emergency shell is "
          "disabled in many distros right now.\nSo the only choice you can type "
-         "is 'y' or 'Y' if you still want to boot via the rootfs loacted in "
+         "is 'y' or 'Y' if you still want to boot via the rootfs located in "
          "your initial hard drive.\nOf course, if you think the reason of the "
          "corruption of some rootfs file is due to some security issues, "
          "please do not boot from the existing rootfs but boot from a bootable "
@@ -47,16 +49,14 @@ void ask_user(void) {
       response[strcspn(response, "\n")] = '\0';
       if (strlen(response) > 1) {
         printf("Invalid choice, please input 'y' or 'Y' if you still want to "
-               "continue "
-               "the boot porcess:\n");
+               "continue the boot process:\n");
         while (getchar() != '\n') {
         }
       } else if (response[0] == 'y' || response[0] == 'Y') {
         exit(0);
       } else {
         printf("Invalid choice, please input 'y' or 'Y' if you still want to "
-               "continue "
-               "the boot porcess:\n");
+               "continue the boot process:\n");
       }
     } else {
       printf("Failed to get input.\n");
@@ -65,33 +65,24 @@ void ask_user(void) {
   }
 }
 
-void read_file(const char *file_path, char **content, size_t *size) {
+void read_file_chunked(const char *file_path,
+                       void (*process_chunk)(const unsigned char *, size_t,
+                                             EVP_MD_CTX *),
+                       EVP_MD_CTX *mdctx) {
   FILE *file = fopen(file_path, "rb");
   if (!file) {
     fprintf(stderr, "Error reading file %s: %s\n", file_path, strerror(errno));
     ask_user();
   }
 
-  fseek(file, 0, SEEK_END);
-  *size = ftell(file);
-  if (*size == -1L) {
-    fprintf(stderr, "Error determining file size %s: %s\n", file_path,
-            strerror(errno));
-    fclose(file);
-    ask_user();
-  }
-  fseek(file, 0, SEEK_SET);
-
-  *content = malloc(*size);
-  if (!*content) {
-    fprintf(stderr, "Memory allocation failed\n");
-    fclose(file);
-    ask_user();
+  unsigned char buffer[CHUNK_SIZE];
+  size_t bytes_read;
+  while ((bytes_read = fread(buffer, 1, CHUNK_SIZE, file)) > 0) {
+    process_chunk(buffer, bytes_read, mdctx);
   }
 
-  if (fread(*content, 1, *size, file) != *size) {
+  if (ferror(file)) {
     fprintf(stderr, "Error reading file %s\n", file_path);
-    free(*content);
     fclose(file);
     ask_user();
   }
@@ -99,17 +90,19 @@ void read_file(const char *file_path, char **content, size_t *size) {
   fclose(file);
 }
 
+void process_chunk(const unsigned char *chunk, size_t size, EVP_MD_CTX *mdctx) {
+  if (!EVP_DigestVerifyUpdate(mdctx, chunk, size)) {
+    fprintf(stderr, "Error updating digest verify\n");
+    ask_user();
+  }
+}
+
 void verify_signature(const char *file_path, const char *sig_path,
                       EVP_PKEY *pubkey) {
-  char *content;
-  size_t size;
-  read_file(file_path, &content, &size);
-
   FILE *sig_file = fopen(sig_path, "rb");
   if (!sig_file) {
     fprintf(stderr, "Error reading signature file %s: %s\n", sig_path,
             strerror(errno));
-    free(content);
     ask_user();
   }
 
@@ -120,7 +113,6 @@ void verify_signature(const char *file_path, const char *sig_path,
   unsigned char *sig = malloc(sig_size);
   if (fread(sig, 1, sig_size, sig_file) != sig_size) {
     fprintf(stderr, "Error reading signature file %s\n", sig_path);
-    free(content);
     free(sig);
     fclose(sig_file);
     ask_user();
@@ -131,30 +123,21 @@ void verify_signature(const char *file_path, const char *sig_path,
   EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
   if (!EVP_DigestVerifyInit(mdctx, NULL, EVP_sha256(), NULL, pubkey)) {
     fprintf(stderr, "Error initializing digest verify\n");
-    free(content);
     free(sig);
     EVP_MD_CTX_free(mdctx);
     ask_user();
   }
 
-  if (!EVP_DigestVerifyUpdate(mdctx, content, size)) {
-    fprintf(stderr, "Error updating digest verify\n");
-    free(content);
-    free(sig);
-    EVP_MD_CTX_free(mdctx);
-    ask_user();
-  }
+  read_file_chunked(file_path, process_chunk, mdctx);
 
   if (!EVP_DigestVerifyFinal(mdctx, sig, sig_size)) {
     fprintf(stderr, "Signature verification failed for %s\n", file_path);
-    free(content);
     free(sig);
     EVP_MD_CTX_free(mdctx);
     ask_user();
   }
 
   EVP_MD_CTX_free(mdctx);
-  free(content);
   free(sig);
 }
 
@@ -178,7 +161,6 @@ EVP_PKEY *load_public_key(const char *pub_key_path) {
 }
 
 int main(int argc, char *argv[]) {
-
   signal(SIGINT, handle_sigint);
 
   if (argc != 6) {
@@ -201,14 +183,18 @@ int main(int argc, char *argv[]) {
   EVP_PKEY *pubkey = load_public_key(PUB_KEY_PATH);
   verify_signature(FILELIST_PATH, FILELIST_SIG_PATH, pubkey);
 
-  char *filelist_content;
-  size_t filelist_size;
-  read_file(FILELIST_PATH, &filelist_content, &filelist_size);
+  FILE *filelist_file = fopen(FILELIST_PATH, "r");
+  if (!filelist_file) {
+    fprintf(stderr, "Error opening filelist %s: %s\n", FILELIST_PATH,
+            strerror(errno));
+    EVP_PKEY_free(pubkey);
+    ask_user();
+  }
 
-  char *entry = strtok(filelist_content, "\n");
-  while (entry) {
+  char line[512];
+  while (fgets(line, sizeof(line), filelist_file)) {
     char num[256], path[256];
-    if (sscanf(entry, "%[^=]=%s", num, path) == 2) {
+    if (sscanf(line, "%[^=]=%s", num, path) == 2) {
       char file_path[512], sig_path[512];
 
       snprintf(file_path, sizeof(file_path), "%s%s", ROOT_PATH, path);
@@ -217,10 +203,9 @@ int main(int argc, char *argv[]) {
       printf("Verifying: %s\n", file_path);
       verify_signature(file_path, sig_path, pubkey);
     }
-    entry = strtok(NULL, "\n");
   }
 
-  free(filelist_content);
+  fclose(filelist_file);
   EVP_PKEY_free(pubkey);
   EVP_cleanup();
   ERR_free_strings();
