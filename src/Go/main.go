@@ -40,10 +40,7 @@ import (
 
 const chunkSize = 4096
 
-func handleSigint(sig os.Signal) {
-	fmt.Println("Received signal:", sig)
-	os.Exit(1)
-}
+func handleSigint(sig os.Signal) {}
 
 func askUser() {
 	reader := bufio.NewReader(os.Stdin)
