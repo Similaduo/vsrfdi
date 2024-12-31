@@ -104,6 +104,7 @@ An archlinux PKGBUILD file will be added soon.
 
 Notes:
 This program is still in the very early development so there should quite a lot of bugs or error. Issues, pull requests and forks are weclomed.
+Right now there are two implements, the Go one has some issues (can't show the error message when verifying the signatures failed) and the C one is working as expected now.
 
 License:
 This program is under GPL-3.0-or-later.
